@@ -74,7 +74,7 @@ public final class SkinConfig {
                 return new JsonObject();
             }
             try (JsonReader r = new JsonReader(Files.newBufferedReader(f, StandardCharsets.UTF_8))) {
-                JsonElement e = JsonParser.parseReader(r); // lenient: // comments are fine
+                JsonElement e = JsonParser.parseReader(r); // lenient: # comments are fine
                 if (e.isJsonObject()) return e.getAsJsonObject();
             }
             SkinMod.LOGGER.warn("{} is not a JSON object, using defaults", f);
@@ -317,58 +317,58 @@ public final class SkinConfig {
 
     /** Written to config/&lt;mod id&gt;.json the first time the standalone mod starts. */
     private static final String DEFAULT_FILE = """
-            // FishSkin settings. Restart the game (or the server) after editing.
-            //
-            // [server] = on a server, the SERVER's value is used for every player (a player's own file is ignored there).
-            //            In singleplayer your own file is used.
-            // [client] = always your own file.
-            //
-            // This file uses JSON with // comments. If it breaks, delete it and a fresh one is written.
+            # FishSkin settings. Restart the game (or the server) after editing.
+            #
+            # [server] = on a server, the SERVER's value is used for every player (a player's own file is ignored there).
+            #            In singleplayer your own file is used.
+            # [client] = always your own file.
+            #
+            # This file is JSON with # comments. If it breaks, delete it and a fresh one is written.
             {
-              // [server] true: the open key (K by default, change it in Options > Controls) opens the wardrobe anywhere.
-              //          false: the key only works inside a skin zone or while looking at a skin block.
+              # [server] true: the open key (K by default, change it in Options > Controls) opens the wardrobe anywhere.
+              #          false: the key only works inside a skin zone or while looking at a skin block.
               "openKeyAnywhere": true,
 
               "zones": {
-                // [server] Skin zones: an area marked by a Skin Zone block (creative menu, operator blocks tab).
-                //          Right-click the Skin Zone block in creative to set its size.
+                # [server] Skin zones: an area marked by a Skin Zone block (creative menu, operator blocks tab).
+                #          Right-click the Skin Zone block in creative to set its size.
                 "enabled": false,
-                // [server] Needs "enabled": true. true: the wardrobe opens by itself when a player walks into a zone.
-                //          false: a message shows instead and the player presses the open key.
+                # [server] Needs "enabled": true. true: the wardrobe opens by itself when a player walks into a zone.
+                #          false: a message shows instead and the player presses the open key.
                 "openOnEnter": false,
-                // [server] The message shown inside a zone. {{button}} becomes the player's open key.
+                # [server] The message shown inside a zone. {{button}} becomes the player's open key.
                 "message": "Press {{button}} to change your skin",
-                // [server] Size of a newly placed Skin Zone block, in blocks (1..256).
+                # [server] Size of a newly placed Skin Zone block, in blocks (1..256).
                 "defaultWidth": 8,
                 "defaultLength": 8,
                 "defaultHeight": 4
               },
 
               "blocks": {
-                // [server] true: right-clicking a skin block opens the wardrobe: the mod's own Skin Station block
-                //          (creative menu, functional blocks tab) and every block in "list" below.
-                //          Sneak + right-click still uses the block normally.
+                # [server] true: right-clicking a skin block opens the wardrobe: the mod's own Skin Station block
+                #          (creative menu, functional blocks tab) and every block in "list" below.
+                #          Sneak + right-click still uses the block normally.
                 "enabled": false,
-                // [server] Game or modded blocks that open the wardrobe, by id, e.g. "minecraft:loom", "minecraft:barrel".
-                //          "loom" alone means "minecraft:loom". Their normal screen will not open while this is on.
+                # [server] Game or modded blocks that open the wardrobe, by id, e.g. "minecraft:loom", "minecraft:barrel".
+                #          "loom" alone means "minecraft:loom". Their normal screen will not open while this is on.
                 "list": ["minecraft:loom"],
-                // [server] The message shown while looking at a skin block.
+                # [server] The message shown while looking at a skin block.
                 "message": "Right-click to change your skin"
               },
 
-              // [server] How many outfits each player can keep in the wardrobe. -1 = unlimited.
+              # [server] How many outfits each player can keep in the wardrobe. -1 = unlimited.
               "maxOutfits": -1,
-              // [server] Largest skin the server accepts: 64, 128, 256, 512, 1024 or 2048 (pixels, square PNG).
-              //          Bigger skins look sharper but use more video memory on every player's PC.
+              # [server] Largest skin the server accepts: 64, 128, 256, 512, 1024 or 2048 (pixels, square PNG).
+              #          Bigger skins look sharper but use more video memory on every player's PC.
               "maxSkinSize": 2048,
 
-              // Figura avatars and talking skins (Plasmo Voice) turn on by themselves when those mods are installed.
+              # Figura avatars and talking skins (Plasmo Voice) turn on by themselves when those mods are installed.
 
               "plasmoVoice": {
-                // [client] Only used when Plasmo Voice is installed. How loud your voice must be for the talking skin, in dB: -127 = silence, 0 = loudest.
-                //          Normal speech is about -30 to -15. Lower it (e.g. -50) if the mouth opens too rarely.
+                # [client] Only used when Plasmo Voice is installed. How loud your voice must be for the talking skin, in dB: -127 = silence, 0 = loudest.
+                #          Normal speech is about -30 to -15. Lower it (e.g. -50) if the mouth opens too rarely.
                 "minLevelDb": -40,
-                // [client] How long the mouth stays open after you stop making sound, in milliseconds.
+                # [client] How long the mouth stays open after you stop making sound, in milliseconds.
                 "holdMs": 200
               }
             }
