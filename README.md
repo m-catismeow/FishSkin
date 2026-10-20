@@ -34,9 +34,7 @@ This branch (`1.20.x`) is for Minecraft **1.20.1** — Fabric and Forge.
 ## Install
 
 1. Install the mod loader: [Fabric](https://fabricmc.net/) (plus [Fabric API](https://modrinth.com/mod/fabric-api)) or [Forge](https://files.minecraftforge.net/).
-2. Download FishSkin for your loader and Minecraft version from **[Modrinth](https://modrinth.com/mod/fishskin)**
-   (the only place it is published) and put the jar into the `mods` folder.
-3. For multiplayer, install it on the **server and on every player's game**. The server shares the skins.
+2. For multiplayer, install it on the **server and on every player's game**. The server shares the skins.
 
 Figura and Plasmo Voice are optional and need no setting: when one is installed, its button shows in the wardrobe;
 without it, the button is not there.
