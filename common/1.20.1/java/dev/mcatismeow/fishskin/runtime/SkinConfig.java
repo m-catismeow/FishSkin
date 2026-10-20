@@ -5,7 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
+import com.google.gson.JsonPrimitive;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Feature switches. Mods made in the launcher get them baked into the jar (fishskin.config.json). A jar baked with
- * {@code "userConfig": true} (the standalone mod) instead reads config/&lt;mod id&gt;.json, which players and server
+ * {@code "userConfig": true} (the standalone mod) instead reads config/&lt;mod id&gt;.toml, which players and server
  * owners edit; in multiplayer the server's values for the [server] keys replace the client's (see {@link #applyRemote}).
  */
 public final class SkinConfig {
@@ -62,7 +62,7 @@ public final class SkinConfig {
     // ---- the config file (standalone mod) -----------------------------------------------------------------------
 
     private static Path file() {
-        return SkinMod.platform.configDir().resolve(SkinMod.ID + ".json");
+        return SkinMod.platform.configDir().resolve(SkinMod.ID + ".toml");
     }
 
     private static JsonObject readFile() {
@@ -73,15 +73,124 @@ public final class SkinConfig {
                 Files.writeString(f, DEFAULT_FILE, StandardCharsets.UTF_8);
                 return new JsonObject();
             }
-            try (JsonReader r = new JsonReader(Files.newBufferedReader(f, StandardCharsets.UTF_8))) {
-                JsonElement e = JsonParser.parseReader(r); // lenient: # comments are fine
-                if (e.isJsonObject()) return e.getAsJsonObject();
-            }
-            SkinMod.LOGGER.warn("{} is not a JSON object, using defaults", f);
+            return parseToml(Files.readString(f, StandardCharsets.UTF_8), f);
         } catch (Exception e) {
             SkinMod.LOGGER.warn("Could not read {}, using defaults (fix or delete the file)", f, e);
         }
         return new JsonObject();
+    }
+
+    /**
+     * The small part of TOML this file uses: # comments, [section] headers, and key = value with true/false,
+     * whole numbers, "strings" and ["string", ...] arrays (an array may span lines). Bad lines are skipped.
+     */
+    static JsonObject parseToml(String text, Path from) {
+        JsonObject root = new JsonObject(), table = root;
+        String[] lines = text.replace("\r\n", "\n").split("\n");
+        for (int i = 0; i < lines.length; i++) {
+            String line = stripComment(lines[i]).trim();
+            if (line.isEmpty()) continue;
+            if (line.startsWith("[") && line.endsWith("]") && !line.contains("=")) {
+                table = new JsonObject();
+                root.add(line.substring(1, line.length() - 1).trim(), table);
+                continue;
+            }
+            int eq = line.indexOf('=');
+            if (eq <= 0) { badLine(from, i, lines[i]); continue; }
+            String key = unquote(line.substring(0, eq).trim());
+            String value = line.substring(eq + 1).trim();
+            // an array may go on over the next lines until its ]
+            while (value.startsWith("[") && !closed(value) && i + 1 < lines.length) {
+                value += " " + stripComment(lines[++i]).trim();
+            }
+            JsonElement e = tomlValue(value);
+            if (key == null || e == null) badLine(from, i, lines[i]);
+            else table.add(key, e);
+        }
+        return root;
+    }
+
+    private static JsonElement tomlValue(String v) {
+        if (v.equals("true") || v.equals("false")) return new JsonPrimitive(Boolean.parseBoolean(v));
+        if (v.startsWith("\"")) {
+            String s = unquote(v);
+            return s == null ? null : new JsonPrimitive(s);
+        }
+        if (v.startsWith("[") && closed(v)) {
+            JsonArray arr = new JsonArray();
+            String inner = v.substring(1, v.lastIndexOf(']')).trim();
+            StringBuilder cur = new StringBuilder();
+            boolean inStr = false;
+            for (int k = 0; k < inner.length(); k++) {
+                char c = inner.charAt(k);
+                if (c == '"' && (k == 0 || inner.charAt(k - 1) != '\\')) inStr = !inStr;
+                if (c == ',' && !inStr) {
+                    addItem(arr, cur);
+                    cur.setLength(0);
+                } else {
+                    cur.append(c);
+                }
+            }
+            addItem(arr, cur);
+            return arr;
+        }
+        try {
+            return new JsonPrimitive(Long.parseLong(v.replace("_", "")));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static void addItem(JsonArray arr, StringBuilder raw) {
+        String s = raw.toString().trim();
+        if (s.isEmpty()) return;
+        JsonElement e = tomlValue(s);
+        if (e != null) arr.add(e);
+    }
+
+    private static boolean closed(String v) {
+        boolean inStr = false;
+        int depth = 0;
+        for (int k = 0; k < v.length(); k++) {
+            char c = v.charAt(k);
+            if (c == '"' && (k == 0 || v.charAt(k - 1) != '\\')) inStr = !inStr;
+            else if (!inStr && c == '[') depth++;
+            else if (!inStr && c == ']' && --depth == 0) return true;
+        }
+        return false;
+    }
+
+    /** Drops a # comment, but not a # inside a "string". */
+    private static String stripComment(String line) {
+        boolean inStr = false;
+        for (int k = 0; k < line.length(); k++) {
+            char c = line.charAt(k);
+            if (c == '"' && (k == 0 || line.charAt(k - 1) != '\\')) inStr = !inStr;
+            else if (c == '#' && !inStr) return line.substring(0, k);
+        }
+        return line;
+    }
+
+    /** A "quoted" key or value without its quotes (\" \\ \n \t understood); a bare key as it is; broken → null. */
+    private static String unquote(String s) {
+        if (!s.startsWith("\"")) return s;
+        if (s.length() < 2 || !s.endsWith("\"")) return null;
+        String body = s.substring(1, s.length() - 1);
+        StringBuilder out = new StringBuilder();
+        for (int k = 0; k < body.length(); k++) {
+            char c = body.charAt(k);
+            if (c == '\\' && k + 1 < body.length()) {
+                char n = body.charAt(++k);
+                out.append(n == 'n' ? '\n' : n == 't' ? '\t' : n);
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
+    }
+
+    private static void badLine(Path from, int index, String line) {
+        SkinMod.LOGGER.warn("{} line {}: cannot read \"{}\", skipped", from, index + 1, line.trim());
     }
 
     /** Turns the file's friendly keys into the shape the getters read (the same shape the launcher bakes). */
@@ -315,7 +424,7 @@ public final class SkinConfig {
         return e != null && e.isJsonObject() ? e.getAsJsonObject() : null;
     }
 
-    /** Written to config/&lt;mod id&gt;.json the first time the standalone mod starts. */
+    /** Written to config/&lt;mod id&gt;.toml the first time the standalone mod starts. */
     private static final String DEFAULT_FILE = """
             # FishSkin settings. Restart the game (or the server) after editing.
             #
@@ -323,54 +432,52 @@ public final class SkinConfig {
             #            In singleplayer your own file is used.
             # [client] = always your own file.
             #
-            # This file is JSON with # comments. If it breaks, delete it and a fresh one is written.
-            {
-              # [server] true: the open key (K by default, change it in Options > Controls) opens the wardrobe anywhere.
-              #          false: the key only works inside a skin zone or while looking at a skin block.
-              "openKeyAnywhere": true,
+            # If this file breaks, delete it and a fresh one is written.
 
-              "zones": {
-                # [server] Skin zones: an area marked by a Skin Zone block (creative menu, operator blocks tab).
-                #          Right-click the Skin Zone block in creative to set its size.
-                "enabled": false,
-                # [server] Needs "enabled": true. true: the wardrobe opens by itself when a player walks into a zone.
-                #          false: a message shows instead and the player presses the open key.
-                "openOnEnter": false,
-                # [server] The message shown inside a zone. {{button}} becomes the player's open key.
-                "message": "Press {{button}} to change your skin",
-                # [server] Size of a newly placed Skin Zone block, in blocks (1..256).
-                "defaultWidth": 8,
-                "defaultLength": 8,
-                "defaultHeight": 4
-              },
+            # [server] true: the open key (K by default, change it in Options > Controls) opens the wardrobe anywhere.
+            #          false: the key only works inside a skin zone or while looking at a skin block.
+            openKeyAnywhere = true
 
-              "blocks": {
-                # [server] true: right-clicking a skin block opens the wardrobe: the mod's own Skin Station block
-                #          (creative menu, functional blocks tab) and every block in "list" below.
-                #          Sneak + right-click still uses the block normally.
-                "enabled": false,
-                # [server] Game or modded blocks that open the wardrobe, by id, e.g. "minecraft:loom", "minecraft:barrel".
-                #          "loom" alone means "minecraft:loom". Their normal screen will not open while this is on.
-                "list": ["minecraft:loom"],
-                # [server] The message shown while looking at a skin block.
-                "message": "Right-click to change your skin"
-              },
+            # [server] How many outfits each player can keep in the wardrobe. -1 = unlimited.
+            maxOutfits = -1
 
-              # [server] How many outfits each player can keep in the wardrobe. -1 = unlimited.
-              "maxOutfits": -1,
-              # [server] Largest skin the server accepts: 64, 128, 256, 512, 1024 or 2048 (pixels, square PNG).
-              #          Bigger skins look sharper but use more video memory on every player's PC.
-              "maxSkinSize": 2048,
+            # [server] Largest skin the server accepts: 64, 128, 256, 512, 1024 or 2048 (pixels, square PNG).
+            #          Bigger skins look sharper but use more video memory on every player's PC.
+            maxSkinSize = 2048
 
-              # Figura avatars and talking skins (Plasmo Voice) turn on by themselves when those mods are installed.
+            [zones]
+            # [server] Skin zones: an area marked by a Skin Zone block (creative menu, operator blocks tab).
+            #          Right-click the Skin Zone block in creative to set its size.
+            enabled = false
+            # [server] Needs enabled = true. true: the wardrobe opens by itself when a player walks into a zone.
+            #          false: a message shows instead and the player presses the open key.
+            openOnEnter = false
+            # [server] The message shown inside a zone. {{button}} becomes the player's open key.
+            message = "Press {{button}} to change your skin"
+            # [server] Size of a newly placed Skin Zone block, in blocks (1..256).
+            defaultWidth = 8
+            defaultLength = 8
+            defaultHeight = 4
 
-              "plasmoVoice": {
-                # [client] Only used when Plasmo Voice is installed. How loud your voice must be for the talking skin, in dB: -127 = silence, 0 = loudest.
-                #          Normal speech is about -30 to -15. Lower it (e.g. -50) if the mouth opens too rarely.
-                "minLevelDb": -40,
-                # [client] How long the mouth stays open after you stop making sound, in milliseconds.
-                "holdMs": 200
-              }
-            }
+            [blocks]
+            # [server] true: right-clicking a skin block opens the wardrobe: the mod's own Skin Station block
+            #          (creative menu, functional blocks tab) and every block in list below.
+            #          Sneak + right-click still uses the block normally.
+            enabled = false
+            # [server] Game or modded blocks that open the wardrobe, by id, e.g. "minecraft:loom", "minecraft:barrel".
+            #          "loom" alone means "minecraft:loom". Their normal screen will not open while this is on.
+            list = ["minecraft:loom"]
+            # [server] The message shown while looking at a skin block.
+            message = "Right-click to change your skin"
+
+            # Figura avatars and talking skins (Plasmo Voice) turn on by themselves when those mods are installed.
+
+            [plasmoVoice]
+            # [client] Only used when Plasmo Voice is installed. How loud your voice must be for the talking skin,
+            #          in dB: -127 = silence, 0 = loudest. Normal speech is about -30 to -15.
+            #          Lower it (e.g. -50) if the mouth opens too rarely.
+            minLevelDb = -40
+            # [client] How long the mouth stays open after you stop making sound, in milliseconds.
+            holdMs = 200
             """;
 }
