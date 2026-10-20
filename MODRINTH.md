@@ -19,7 +19,7 @@
 
 ## Configuration
 
-`config/fishskin.json` is written on first start, with every option explained inside. In multiplayer the
+`config/fishskin.toml` is written on first start, with every option explained inside. In multiplayer the
 **server's** settings decide who can open the wardrobe where:
 
 - `openKeyAnywhere` — the open key works everywhere, or only in zones / at skin blocks
