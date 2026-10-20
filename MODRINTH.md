@@ -8,10 +8,10 @@
 ## Features
 
 - 🖼️ **HD skins** — square PNG skins of 64 up to **2048 px**, wide or slim arms.
-- 👗 **Wardrobe** — press **K** to open it. Keep several outfits, drop PNG files onto the window to add them,
+- 👗 **Wardrobe** — press **K** to open it. Keep as many outfits as you like, drop PNG files onto the window to add them,
   turn the 3D preview with the mouse.
-- 🧱 **Skin blocks** — right-click the *Skin Station*, or any block you choose (a loom by default), to change your skin.
-- 📍 **Skin zones** — mark an area with a *Skin Zone* block; inside it a message shows, or the wardrobe opens by itself.
+- 🧱 **Skin blocks** *(turn on in the config)* — right-click the *Skin Station*, or any block you choose (a loom by default), to change your skin.
+- 📍 **Skin zones** *(turn on in the config)* — mark an area with a *Skin Zone* block; inside it a message shows, or the wardrobe opens by itself.
 - 🎭 **Figura** *(optional)* — each outfit can carry a Figura avatar. The picker shows every avatar with its own
   colour mark and has a search box.
 - 🎙️ **Plasmo Voice** *(optional)* — a second "talking" skin that shows only while you actually speak.
@@ -24,9 +24,11 @@
 
 - `openKeyAnywhere` — the open key works everywhere, or only in zones / at skin blocks
 - `zones.enabled`, `zones.openOnEnter` — skin zones, and whether entering one opens the wardrobe
-- `blocks.enabled`, `blocks.skinStation`, `blocks.list` — which blocks open the wardrobe
+- `blocks.enabled`, `blocks.list` — whether the Skin Station and the listed blocks open the wardrobe
 - `maxOutfits`, `maxSkinSize` — limits per player
-- `figura.enabled`, `plasmoVoice.enabled`, `plasmoVoice.minLevelDb`, `plasmoVoice.holdMs` — your own options
+- `plasmoVoice.minLevelDb`, `plasmoVoice.holdMs` — your own talking-skin sensitivity
+
+Figura and Plasmo Voice need no setting: their buttons show by themselves when those mods are installed.
 
 ## Install
 
