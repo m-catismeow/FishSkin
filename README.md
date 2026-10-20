@@ -39,6 +39,10 @@ This branch (`1.20.x`) is for Minecraft **1.20.1** — Fabric and Forge.
 
 Figura and Plasmo Voice are optional; the matching features appear when they are installed.
 
+> **Figura: remember to take the avatar off.** An outfit without a Figura avatar keeps whatever avatar Figura has
+> loaded right now. When you switch to an outfit that has no avatar set, or you stop using Figura, open Figura's own
+> menu and unload your avatar (or turn Figura off) — otherwise the old avatar stays on top of the new skin.
+
 ## Configuration
 
 The first start writes `config/fishskin.json`. It is JSON with `//` comments, and every setting is explained
