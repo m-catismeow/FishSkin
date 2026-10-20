@@ -8,7 +8,7 @@ HD skins, an in-game wardrobe, skin blocks and skin zones for Minecraft — with
 > **This mod was made 100% with AI (Claude by Anthropic).** Every line of code, every texture and this text were
 > written by AI, directed by [m-catismeow](https://github.com/m-catismeow).
 
-This branch (`1.20.x`) is for Minecraft **1.20.1** — Fabric and Forge.
+This branch (`1.21.x`) is for Minecraft **1.21.1, 1.21.4** — Fabric and Forge.
 
 | Branch | Minecraft |
 |---|---|
