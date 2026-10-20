@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "license": "${mod_license}",
+  "environment": "*",
+  "icon": "assets/fishskin/icon.png",
+  "entrypoints": {
+    "main": ["dev.mcatismeow.fishskin.runtime.fabric.SkinModFabric"],
+    "client": ["dev.mcatismeow.fishskin.runtime.fabric.SkinModFabricClient"]
+  },
+  "mixins": [{ "config": "fishskin.mixins.json", "environment": "client" }],
+  "depends": { "fabricloader": ">=0.14.21", "minecraft": "~1.20.1", "fabric-api": "*" },
+  "suggests": { "figura": "*", "plasmovoice": "*" }
+}
