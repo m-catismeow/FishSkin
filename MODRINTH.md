@@ -46,6 +46,5 @@ For multiplayer, install FishSkin on the server **and** on every player's game.
 ## Links
 
 - Source code and full config reference: https://github.com/m-catismeow/FishSkin
-- Bug reports: https://github.com/m-catismeow/FishSkin/issues
 
 License: zlib — use it for anything, no warranty.
