@@ -55,7 +55,7 @@ public final class SkinConfig {
         JsonObject r = root;
         if (r != null) return r;
         if (!userConfig()) return root = baked;
-        if (SkinMod.platform == null) return fromFile(new JsonObject()); // too early to know the config folder; ask again later
+        if (SkinMod.platform == null) return new JsonObject(); // too early to know the config folder or the mods; ask again later
         return root = fromFile(readFile());
     }
 
@@ -86,7 +86,7 @@ public final class SkinConfig {
 
     /** Turns the file's friendly keys into the shape the getters read (the same shape the launcher bakes). */
     private static JsonObject fromFile(JsonObject f) {
-        JsonObject zones = sub(f, "zones"), blocks = sub(f, "blocks"), figura = sub(f, "figura"), voice = sub(f, "plasmoVoice");
+        JsonObject zones = sub(f, "zones"), blocks = sub(f, "blocks"), voice = sub(f, "plasmoVoice");
         JsonObject out = new JsonObject();
 
         JsonObject key = new JsonObject();
@@ -95,7 +95,7 @@ public final class SkinConfig {
         out.add("key", key);
 
         JsonObject zone = new JsonObject();
-        zone.addProperty("enabled", bool(zones, "enabled", true));
+        zone.addProperty("enabled", bool(zones, "enabled", false));
         zone.addProperty("mode", bool(zones, "openOnEnter", false) ? "instant" : "hint");
         zone.addProperty("message", str(zones, "message", "Press {{button}} to change your skin"));
         zone.addProperty("width", num(zones, "defaultWidth", 8));
@@ -104,8 +104,8 @@ public final class SkinConfig {
         out.add("zone", zone);
 
         JsonObject block = new JsonObject();
-        block.addProperty("enabled", bool(blocks, "enabled", true));
-        block.addProperty("builtin", bool(blocks, "skinStation", true));
+        block.addProperty("enabled", bool(blocks, "enabled", false));
+        block.addProperty("builtin", true); // the Skin Station follows blocks.enabled
         block.addProperty("message", str(blocks, "message", "Right-click to change your skin"));
         JsonArray entries = new JsonArray();
         JsonElement list = blocks.get("list");
@@ -124,15 +124,16 @@ public final class SkinConfig {
         block.add("entries", entries);
         out.add("block", block);
 
-        out.addProperty("maxSkins", num(f, "maxOutfits", 10));
+        out.addProperty("maxSkins", num(f, "maxOutfits", -1));
         out.addProperty("maxSkinSize", num(f, "maxSkinSize", 2048));
 
+        // Figura and Plasmo Voice are on whenever the mod is installed; without it their buttons do not show
         JsonObject fig = new JsonObject();
-        fig.addProperty("enabled", bool(figura, "enabled", true));
+        fig.addProperty("enabled", SkinMod.platform.isModLoaded("figura"));
         out.add("figura", fig);
 
         JsonObject pv = new JsonObject();
-        pv.addProperty("enabled", bool(voice, "enabled", true));
+        pv.addProperty("enabled", SkinMod.platform.isModLoaded("plasmovoice"));
         pv.addProperty("minLevelDb", num(voice, "minLevelDb", -40));
         pv.addProperty("holdMs", num(voice, "holdMs", 200));
         out.add("plasmo", pv);
@@ -331,7 +332,7 @@ public final class SkinConfig {
               "zones": {
                 // [server] Skin zones: an area marked by a Skin Zone block (creative menu, operator blocks tab).
                 //          Right-click the Skin Zone block in creative to set its size.
-                "enabled": true,
+                "enabled": false,
                 // [server] Needs "enabled": true. true: the wardrobe opens by itself when a player walks into a zone.
                 //          false: a message shows instead and the player presses the open key.
                 "openOnEnter": false,
@@ -344,10 +345,10 @@ public final class SkinConfig {
               },
 
               "blocks": {
-                // [server] true: right-clicking a skin block opens the wardrobe. Sneak + right-click still uses the block normally.
-                "enabled": true,
-                // [server] The mod's own Skin Station block (creative menu, functional blocks tab) opens the wardrobe.
-                "skinStation": true,
+                // [server] true: right-clicking a skin block opens the wardrobe: the mod's own Skin Station block
+                //          (creative menu, functional blocks tab) and every block in "list" below.
+                //          Sneak + right-click still uses the block normally.
+                "enabled": false,
                 // [server] Game or modded blocks that open the wardrobe, by id, e.g. "minecraft:loom", "minecraft:barrel".
                 //          "loom" alone means "minecraft:loom". Their normal screen will not open while this is on.
                 "list": ["minecraft:loom"],
@@ -356,20 +357,15 @@ public final class SkinConfig {
               },
 
               // [server] How many outfits each player can keep in the wardrobe. -1 = unlimited.
-              "maxOutfits": 10,
+              "maxOutfits": -1,
               // [server] Largest skin the server accepts: 64, 128, 256, 512, 1024 or 2048 (pixels, square PNG).
               //          Bigger skins look sharper but use more video memory on every player's PC.
               "maxSkinSize": 2048,
 
-              "figura": {
-                // [client] Lets each outfit carry a Figura avatar (needs the Figura mod).
-                "enabled": true
-              },
+              // Figura avatars and talking skins (Plasmo Voice) turn on by themselves when those mods are installed.
 
               "plasmoVoice": {
-                // [client] Talking skins: a second skin shown while you speak (needs the Plasmo Voice mod).
-                "enabled": true,
-                // [client] How loud your voice must be for the talking skin, in dB: -127 = silence, 0 = loudest.
+                // [client] Only used when Plasmo Voice is installed. How loud your voice must be for the talking skin, in dB: -127 = silence, 0 = loudest.
                 //          Normal speech is about -30 to -15. Lower it (e.g. -50) if the mouth opens too rarely.
                 "minLevelDb": -40,
                 // [client] How long the mouth stays open after you stop making sound, in milliseconds.
